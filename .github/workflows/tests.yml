@@ -13,6 +13,6 @@ jobs:
         with:
           r-version: 'release'
       - name: Install runtime-test dependencies
-        run: Rscript -e 'install.packages(c("kknn", "C50", "randomForest"), repos="https://cloud.r-project.org")'
+        run: Rscript -e 'install.packages(c("C50", "randomForest"), repos="https://cloud.r-project.org")'
       - name: Run provenance, core, and model smoke tests
         run: Rscript tests/test_core.R
