@@ -1,15 +1,27 @@
+# Command-line parsing shared by the DT and RF entry points.
+#
+# The parser exposes both the options used by the maintained Trees runners and a
+# few historical cross-model tuning limits retained for compatibility with the
+# recovered development context. Scientific model logic lives elsewhere.
+
+# Parse all supported options into a typed list consumed by run_tree_experiments().
 parse_cli <- function(args = commandArgs(trailingOnly = TRUE)) {
+  # Return the value following a flag, or a default when the flag is absent.
   value_after <- function(flag, default = NULL) {
     position <- match(flag, args)
     if (is.na(position)) return(default)
     if (position == length(args)) stop(sprintf("%s requires a value.", flag), call. = FALSE)
     args[[position + 1L]]
   }
+
+  # Convert integer-valued options centrally so malformed CLI input fails before
+  # any data preparation or model fitting begins.
   as_int <- function(flag, default) {
     value <- suppressWarnings(as.integer(value_after(flag, as.character(default))))
     if (is.na(value)) stop(sprintf("%s must be an integer.", flag), call. = FALSE)
     value
   }
+
   list(
     help = "--help" %in% args,
     legacy = "--legacy" %in% args,
@@ -30,6 +42,7 @@ parse_cli <- function(args = commandArgs(trailingOnly = TRUE)) {
   )
 }
 
+# Print options common to both decision-tree and random-forest analyses.
 print_common_help <- function() {
   cat(paste(
     "Common options:",
