@@ -69,9 +69,15 @@ run_tree_experiments <- function(model = c("dt", "rf"), log_transform = FALSE, o
         seed = options$seed + 1000L * config_index
       )
       fold_seed <- options$seed + 100000L * config_index + fold_index
+
+      # The recovered DT scripts use one trial for the balanced/unbalanced
+      # pretest only in the reduced Qtn+Fr_p+U2 -> MSBTn configuration; all
+      # other DT configurations use the class-span trial step. RF is unchanged.
+      dt_pretest_trials <- if (model == "dt" && identical(experiment$id, "reduced_fsb")) 1L else NULL
       selected <- choose_tree_training_variant(
         prepared, model, experiment$output, experiment$features,
-        seed = fold_seed, ntree = 500L
+        seed = fold_seed, ntree = 500L,
+        dt_pretest_trials = dt_pretest_trials
       )
       split <- selected$split
 
