@@ -61,4 +61,19 @@ assert_true(nrow(workspace$geology) == 1721L, "Unexpected geological dataset row
 assert_true(length(workspace$folds_complete) == 10L, "Expected 10 complete-data folds")
 assert_true(length(workspace$folds_geology) == 10L, "Expected 10 geology folds")
 
-cat("All Trees core and provenance tests passed.\n")
+# Current-package model smoke checks use a tiny synthetic dataset so they verify
+# C50/randomForest API compatibility without running the historical experiment.
+toy <- data.frame(
+  x1 = c(0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00),
+  x2 = c(0.05, 0.00, 0.15, 0.10, 0.25, 0.20, 0.80, 0.75, 0.90, 0.85, 1.00, 0.95),
+  class = factor(rep(c("A", "B"), each = 6L))
+)
+dt_fit <- fit_c50(toy, "class", c("x1", "x2"), trials = 2L, seed = 11L)
+dt_pred <- predict(dt_fit, toy, type = "class")
+assert_true(length(dt_pred) == nrow(toy), "C5.0 current-package smoke test failed")
+
+rf_fit <- fit_random_forest(toy, "class", c("x1", "x2"), seed = 12L, ntree = 20L)
+rf_pred <- predict(rf_fit, toy, type = "class")
+assert_true(length(rf_pred) == nrow(toy), "Random-forest current-package smoke test failed")
+
+cat("All Trees core, provenance, and model smoke tests passed.\n")
