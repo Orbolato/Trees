@@ -1,5 +1,18 @@
-# User manual for dt_full.R and rf_full.R
-# 1) Run the R saved workspace (data.RData) created with the generate_data.R code
-# 2) Run the entire code
-# 3) Check the variables initialization in the first code section to found the information of interest
-# 4) Compare with the results in results_dt_full.RData, for dt_full.R, and results_rf_full.RData, for rf_full.R
+# Running the decision-tree and random-forest analyses
+
+Main commands:
+
+```bash
+Rscript dt_full.R
+Rscript dt_full_log.R
+Rscript rf_full.R
+Rscript rf_full_log.R
+```
+
+For a short smoke run:
+
+```bash
+Rscript rf_full.R --max-configurations 1 --max-folds 1 --minimum-per-class 50
+```
+
+Use `--legacy` with any main entry point to run the exact recovered 2018 submission script.

@@ -1,141 +1,29 @@
-#Reading .csv file and saving the data in a variable
-##############################################################################
-
-path1 = file.path("C:","geology.csv")
-dataGeo = read.table(path1, header = TRUE, sep = ",", stringsAsFactor = FALSE)
-
-path2 = file.path("C:","complete.csv")
-dataNet = read.table(path2, header = TRUE, sep = ",", stringsAsFactor = FALSE)
-
-# Package for 10-fold cross validation
-##############################################################################
-
-library(caret)
-
-# Creating folds for the database without geological age
-
-foldsNet=createFolds(dataNet$SBTn,k=10,list=TRUE,returnTrain=FALSE)
-
-# Creating folds for the database with geological age
-
-foldsGeo=createFolds(dataGeo$MSBTn,k=10,list=TRUE,returnTrain=FALSE)
-
-# Proportion check
-##############################################################################
-
-for(j in 1:10){
-  
-  # Selecting fold
-  
-  cat("Fold",j,"\n\n")
-  
-  testNet=dataNet[foldsNet[[j]],]
-  testGeo=dataGeo[foldsGeo[[j]],]
-  
-  # Percentage of elements by class for Robertson (1991)
-  
-  cat("Robertson (1991)\n\n")
-  
-  for(i in sort(unique(dataNet$SBTn))){
-    cat("Class", i, ":", 100*nrow(testNet[testNet$SBTn==i,])/nrow(dataNet[dataNet$SBTn==i,]),"\n")
-  }
-  
-  cat("\n")
-  
-  # Percentage of elements by class for Robertson (2016)
-  
-  cat("Robertson (2016)\n\n")
-  
-  for(i in sort(unique(dataNet$MSBTn))){
-    cat("Class", i, ":", 100*nrow(testNet[testNet$MSBTn==i,])/nrow(dataNet[dataNet$MSBTn==i,]),"\n")
-  }
-  
-  cat("\n")
-  
-  # Percentage of elements by class for Robertson (2016) with geological age
-  
-  cat("Robertson (2016) with geological age\n\n")
-  
-  for(i in sort(unique(dataGeo$MSBTn))){
-    cat("Class", i, ":", 100*nrow(testGeo[testGeo$MSBTn==i,])/nrow(dataGeo[dataGeo$MSBTn==i,]),"\n")
-  }
-  
-  cat("\n")
-  
-  # Percentage of elements by Strutuctural Classification (EST)
-  
-  cat("Structural Classification\n\n")
-  
-  for(i in sort(unique(dataGeo$EST))){
-    cat("Class", i, ":", 100*nrow(testGeo[testGeo$EST==i,])/nrow(dataGeo[dataGeo$EST==i,]),"\n")
-  }
-  
-  cat("\n\n")
-  
+#!/usr/bin/env Rscript
+source(file.path("R", "cpt_core.R"))
+args <- commandArgs(trailingOnly = TRUE)
+value_after <- function(flag, default) {
+  position <- match(flag, args)
+  if (is.na(position)) return(default)
+  if (position == length(args)) stop(sprintf("%s requires a value.", flag), call. = FALSE)
+  args[[position + 1L]]
 }
-
-# Defining validation sets for each test stage without replacement
-##############################################################################
-
-# Vector with the chosen folds in sequence
-
-validFolds=c()
-
-# Vector with the picking options
-
-pick=1:10
-
-for(j in 1:10){
-  
-  # Selecting test fold
-  
-  cat("Test fold:",j,"\n\n")
-  
-  # Setting seed for sampling
-  
-  set.seed( as.integer((as.double(Sys.time())*1000+Sys.getpid()) %% 2^31) )
-  
-  # Sampling a fold for validation
-  
-  if(j<10){
-    
-    # Choosing some unchosen fold
-    
-    f=sample(pick[pick!=j],1)
-    
-    # Excluding chosen fold from the picking options
-    
-    pick=pick[pick!=f]
-    
-    # Keeping the fold identification
-    
-    validFolds=append(validFolds,f)
-    
-    # Print the choice
-    
-    cat("-> Validation fold:",f,"\n\n")
-    
-  }else{
-    
-    # Choosing the only unchosen fold remaining
-    
-    f=pick[1]
-    
-    # Excluding the last fold from the picking options
-    
-    pick=pick[pick!=f]
-    
-    # Keeping the fold identification
-    
-    validFolds=append(validFolds,f)
-    
-    # Print the last fold
-    
-    cat("-> Validation fold:",f,"\n\n")
-    
-  }
+if ("--help" %in% args) {
+  cat("Usage: Rscript generate_data.R [--complete complete.csv] [--geology geology.csv] [--output data.RData] [--seed 2019]\n")
+  quit(status = 0L)
 }
-
-# Show the chosen folds in sequence
-
-show(validFolds)
+.require_namespace("caret")
+complete_path <- value_after("--complete", "complete.csv")
+geology_path <- value_after("--geology", "geology.csv")
+output_path <- value_after("--output", "data.RData")
+seed <- suppressWarnings(as.integer(value_after("--seed", "2019")))
+if (is.na(seed)) stop("--seed must be an integer.", call. = FALSE)
+data <- load_cpt_csvs(complete_path, geology_path)
+dataNet <- data$complete
+dataGeo <- data$geology
+set.seed(seed)
+foldsNet <- caret::createFolds(dataNet$SBTn, k = 10L, list = TRUE, returnTrain = FALSE)
+set.seed(seed + 1L)
+foldsGeo <- caret::createFolds(dataGeo$MSBTn, k = 10L, list = TRUE, returnTrain = FALSE)
+validFolds <- make_validation_fold_map(10L, seed + 2L)
+save(dataNet, dataGeo, foldsNet, foldsGeo, validFolds, file = output_path)
+message(sprintf("Saved reproducible workspace to %s", output_path))

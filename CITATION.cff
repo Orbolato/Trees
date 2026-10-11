@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the later paper that incorporates the DT/RF experiments."
+title: "Decision-tree and random-forest models for CPT soil classification"
+type: software
+authors:
+  - family-names: Carvalho
+    given-names: Lucas Orbolato
+  - family-names: Ribeiro
+    given-names: Dimas Betioli
+repository-code: "https://github.com/Orbolato/Trees"
+preferred-citation:
+  type: article
+  title: "A multiple model machine learning approach for soil classification from cone penetration test data"
+  authors:
+    - family-names: Carvalho
+      given-names: Lucas O.
+    - family-names: Ribeiro
+      given-names: Dimas B.
+  journal: "Soils and Rocks"
+  volume: 44
+  issue: 4
+  year: 2021
+  doi: "10.28927/SR.2021.072121"
