@@ -1,19 +1,33 @@
 #!/usr/bin/env Rscript
+
+# Regression, provenance, and current-package smoke tests for the maintained
+# decision-tree/random-forest repository. The suite checks both cleaned helpers
+# and the preserved 2018 source/archive contract without rerunning the full study.
+
 source(file.path("R", "cpt_core.R"))
 source(file.path("R", "models.R"))
 source(file.path("R", "cli.R"))
 
-assert_true <- function(value, message) if (!isTRUE(value)) stop(message, call. = FALSE)
-assert_equal <- function(a, b, message, tolerance = 1e-10) {
-  if (!isTRUE(all.equal(a, b, tolerance = tolerance, check.attributes = FALSE))) stop(message, call. = FALSE)
+assert_true <- function(value, message) {
+  if (!isTRUE(value)) stop(message, call. = FALSE)
 }
 
+assert_equal <- function(a, b, message, tolerance = 1e-10) {
+  if (!isTRUE(all.equal(a, b, tolerance = tolerance, check.attributes = FALSE))) {
+    stop(message, call. = FALSE)
+  }
+}
+
+# Public maintained entry points and the shared runner must remain syntactically
+# valid after refactoring/documentation changes.
 public_scripts <- c(
   "dt_full.R", "dt_full_log.R", "rf_full.R", "rf_full_log.R",
   "generate_data.R", file.path("R", "runner.R")
 )
 for (file in public_scripts) parse(file = file)
 
+# Provenance check: unpack the source-only preservation archive and verify that
+# all key recovered submission scripts still parse without modifying them.
 archive <- file.path("legacy", "2018", "Trees_recovered_source.tar.xz")
 assert_true(file.exists(archive), "Recovered Trees source archive is missing")
 source_dir <- tempfile("trees-source-")
@@ -29,6 +43,8 @@ legacy_scripts <- c(
 )
 for (file in legacy_scripts) parse(file = file.path(source_dir, file))
 
+# Core method contracts: historical experiment grid, recovered log transform,
+# macro recall, and the C5.0 class-span boosting increment.
 assert_true(length(paper_experiments()) == 10L, "Historical experiment grid must contain 10 configurations")
 assert_equal(signed_log_transform(c(0, 1)), c(0, 1), "Signed-log transform regression failed")
 assert_equal(
@@ -38,10 +54,12 @@ assert_equal(
 )
 assert_true(trial_step_for_classes(factor(c(1, 2, 3))) == 3L, "C5.0 trial-step regression failed")
 
+# Every test fold must use a unique validation fold different from itself.
 validation <- make_validation_fold_map(10L, 2019L)
 assert_true(length(unique(validation)) == 10L, "Validation folds must be unique")
 assert_true(all(validation != seq_len(10L)), "Validation fold cannot equal its test fold")
 
+# Small deterministic fixture for the recovered class-balancing rule.
 sample_data <- data.frame(
   x = c(1, 2, 3, 10, 11, 12),
   y = c(2, 3, 4, 20, 21, 22),
@@ -50,11 +68,16 @@ sample_data <- data.frame(
 balanced <- balance_training_data(sample_data, "class", c("x", "y"), seed = 7L, minimum_per_class = 3L)
 assert_true(length(unique(table(balanced$class))) == 1L, "Balancing regression failed")
 
+# Historical datasets/workspaces are repository artifacts, not generated test
+# fixtures. Check that they remain present and that their workspace structure and
+# expected row counts have not changed during maintained-code refactoring.
 historical_artifacts <- c(
   "complete.csv", "geology.csv", "data.RData",
   "results_dt_full.RData", "results_rf_full.RData"
 )
-for (file in historical_artifacts) assert_true(file.exists(file), sprintf("Historical artifact missing: %s", file))
+for (file in historical_artifacts) {
+  assert_true(file.exists(file), sprintf("Historical artifact missing: %s", file))
+}
 workspace <- load_archived_workspace("data.RData")
 assert_true(nrow(workspace$complete) == 9360L, "Unexpected complete dataset row count")
 assert_true(nrow(workspace$geology) == 1721L, "Unexpected geological dataset row count")
