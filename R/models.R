@@ -30,7 +30,8 @@ validation_score_dt <- function(split, output, features, trials, seed) {
 }
 
 choose_tree_training_variant <- function(prepared, model = c("dt", "rf"), output, features,
-                                         seed = 2019L, ntree = 500L) {
+                                         seed = 2019L, ntree = 500L,
+                                         dt_pretest_trials = NULL) {
   model <- match.arg(model)
   unbalanced <- as_classification_frames(prepared$unbalanced, output)
   balanced <- as_classification_frames(prepared$balanced, output)
@@ -39,9 +40,13 @@ choose_tree_training_variant <- function(prepared, model = c("dt", "rf"), output
     unbalanced_score <- validation_score_rf(unbalanced, output, features, seed + 1L, ntree)
     balanced_score <- validation_score_rf(balanced, output, features, seed + 2L, ntree)
   } else {
-    step <- trial_step_for_classes(unbalanced$train[[output]])
-    unbalanced_score <- validation_score_dt(unbalanced, output, features, step, seed + 1L)
-    balanced_score <- validation_score_dt(balanced, output, features, step, seed + 2L)
+    pretest_trials <- if (is.null(dt_pretest_trials)) {
+      trial_step_for_classes(unbalanced$train[[output]])
+    } else {
+      as.integer(dt_pretest_trials)
+    }
+    unbalanced_score <- validation_score_dt(unbalanced, output, features, pretest_trials, seed + 1L)
+    balanced_score <- validation_score_dt(balanced, output, features, pretest_trials, seed + 2L)
   }
 
   if (balanced_score > unbalanced_score) {
